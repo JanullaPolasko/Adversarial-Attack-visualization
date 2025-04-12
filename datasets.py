@@ -80,10 +80,7 @@ def calculate_mean_std(dataset, split='train', batch_size=64):
         dataset = dataset_class(root=my_path()+'/data', train=(split == 'train'), download=True, transform=transforms.ToTensor())
     loader = DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=4, pin_memory=True)
 
-    mean = 0.
-    std = 0.
-    total_images = 0
-
+    mean, std, total_images = 0. , 0., 0.
     for images, _ in loader:
             batch_samples = images.size(0)  
             images = images.view(batch_samples, images.size(1), -1)  
@@ -172,10 +169,3 @@ def unnormalize_image(image, dataset, split='train', batch_size=64):
 
     unnorm_image = image * std + mean
     return unnorm_image
-
-
-
-
-
-
-
