@@ -10,16 +10,23 @@ This repository contains code for training neural networks (Fully Connected, Con
 
 ## Requirements
 
-- Python 3.x
+- Python 3.11
 - PyTorch
 - NumPy
 - Matplotlib (for visualization)
+- Pytorch Lighting
+- art.attacks.evasion art.estimators.classification
 
 ## Installation
 
 Clone the repository to your local machine:
+`git clone https://github.com/JanullaPolasko/Adversarial-Attack-visualization.git `
 
-```bash
-git clone https://github.com/JanullaPolasko/Adversarial-Attack-visualization.git
-pip install -r requirements.txt
 Install the required packages:
+`pip install -r requirements.txt `
+
+## Usage
+To zaisiti aby eveyrythin go smoothly we ensure to put your model name, type model_class ans num_classes to the get_dataset_mapping() in network.py. this function is loading in every script and here it will be lokin for all the nesseceteries. then add neural network class to the network.py or use some of which is already there. If the model is pretreined in torch  - put in get dataset mapping on last position True, otherwise False
+To train a model and apply adversarial attacks, run the appropriate scripts. For example, you can start by training a model:
+`python train.py`
+
