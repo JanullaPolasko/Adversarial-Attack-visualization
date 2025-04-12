@@ -6,7 +6,19 @@ import torchvision
 
 #ALL  USED COMBINATION HERE
 def get_dataset_mapping():
-    #dataset_name, type,  model_class, num_classes, pretreined model
+    """
+    Returns a list of tuples, each containing the dataset and its associated configuration for model training.
+    Each tuple consists of the following elements:
+
+    - dataset_name (str): Name of the dataset (e.g., 'CIFAR10', 'MNIST').
+    - model_type (str): Type of the model used (e.g., 'CONV', 'FC', 'RESNET', 'VIT').
+    - model_class (class): The class of the model architecture (e.g., `CIFAR_10`, `MNIST_conv`, `CIFAR10_ResNet`).
+    - num_classes (int): The number of output classes for the dataset (e.g., 10 for CIFAR10, MNIST).
+    - pretrained (bool): Indicates whether the model is pretrained or not. Set to `True` if pretrained, `False` otherwise.
+
+    Returns:
+        list: A list of tuples, each specifying the dataset configuration for the respective model.
+    """
     dataset_mapping = (
         ('CIFAR10', 'CONV', CIFAR_10, 10, False),
         ('SVHN', 'CONV', CIFAR_10, 10, False),
