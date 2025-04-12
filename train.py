@@ -19,13 +19,12 @@ class Model(pl.LightningModule):
 
      Parameters:
         - model_class (class): The model class to be used (e.g., ResNet, VIT).
-        - num_classes (int): The number of classes in the dataset.
         - pretrained (bool, optional): Whether to use a pretrained model. Default is False.
         - learning_rate (float, optional): The learning rate for the optimizer. Default is 0.001.
         - loss_function (torch.nn.Module, optional): The loss function to be used for training. Default is nn.CrossEntropyLoss()
     """
         
-    def __init__( self, model_class, num_classes, pretrained = False, learning_rate=0.001, loss_function=nn.CrossEntropyLoss()):
+    def __init__( self, model_class, pretrained = False, learning_rate=0.001, loss_function=nn.CrossEntropyLoss()):
         super().__init__()
         #self.save_hyperparameters()     
         self.learning_rate = learning_rate
@@ -96,15 +95,11 @@ if __name__ == '__main__':
     
     runs = 5
     dataset_mapping = get_dataset_mapping()
-    for dataset_name, type,  model_class, num_classes in dataset_mapping:
+    for dataset_name, type,  model_class, num_classes, pretrained in dataset_mapping:
         start_time = time.time()
         model_name = model_class.__name__
         subprocess.run(['mkdir', '-p', f"{my_path()}/networks/{dataset_name}_{model_name}"])
         
-        #using the pretrained models from torch
-        pretrained = False
-        if type == 'RESNET' or type == 'VIT':
-            pretrained = True
         #for graph later on
         val_accuracies_all_runs = []
         
@@ -114,7 +109,7 @@ if __name__ == '__main__':
         for run in range(runs):
             print(f"Run {run + 1}/{runs} for {dataset_name} using {model_name}. Device: {'GPU' if device == 'gpu' else 'CPU'}")
             # Initialize model
-            model = Model(model_class=model_class, num_classes=num_classes, pretrained=pretrained)
+            model = Model(model_class=model_class, pretrained=pretrained)
 
             #inicialize epochs
             epoch = 25

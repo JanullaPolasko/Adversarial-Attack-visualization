@@ -275,17 +275,17 @@ def load_model_eval(dataset_name, network_type, run , device= None):
     
     #MODEL INFORMATION
     dataset_mapping = get_dataset_mapping()
-    model_class, num_classes, transform = None, None, None
+    model_class, pretrained = None, False
     for entry in dataset_mapping:
         if entry[0] == dataset_name and entry[1] == network_type:
-            _, _, model_class, num_classes = entry
+            _, _, model_class, _, pretrained = entry
             break
 
     # MODEL CHECK 
     if model_class is None:
         raise ValueError(f"Invalid dataset '{dataset_name}' or network type '{network_type}'!")
 
-    if network_type == "RESNET" or network_type == "VIT":
+    if pretrained:
         model = model_class()
     else:
         model = model_class(F.cross_entropy)
