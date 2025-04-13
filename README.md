@@ -34,15 +34,15 @@ Next, either add your own neural network class to `network.py` or select one of 
 ### Saving
 To control where models, adversarial examples, datasets, and visualization outputs are stored, adjust the paths in `datapath.py`.
 
-##  0. Datasets
+###  0. Datasets
 
 The project supports four datasets: SVHN, MNIST, CIFAR-10, and Fashion-MNIST. These are defined in `datasets.py`, where they are loaded, normalized, and prepared for training and evaluation.
 
-##  1. Training
+###  1. Training
 
 Training is handled by the `train.py` script and is implemented using the PyTorch Lightning library. The script will train model in  `get_dataset_mapping()`, save it into a subfolder named `/network` inside the defined `datapath()`, and plot the training progress using the `compute_dev_plot()` function from `visualization_utils.py`. To improve reliability the training process is repeated five times by default (this can be configured via the `run` parameter), with each model saved under a different identifier.
 
-## 2. Crafting Adversarial Examples
+### 2. Crafting Adversarial Examples
 
 To generate adversarial examples, configure the `run_adversarial_attacks()` function inside the `generate_adversarial.py` script. Here, you can specify the model, dataset, and the type of attack you wish to apply. The attacks are implemented in the `adversarial_utils.py` script. Specifically, L2, L1, and Linf attacks use the Adversarial Robustness Toolbox (ART), while the L0 attack is handled by a custom implementation in the `iterative_pixel_attack()` function.
 
@@ -50,7 +50,7 @@ Once the generation process is complete, the adversarial examples will be saved 
 
 At the end of `generate_adversarial.py`, you will find an example of how to call the attack generation function, along with how to visualize the resulting adversarial examples using the `plot_adversarials()` function from `plot_adversarials.py`.
 
-## 3. Visualizing Neural Network Behavior Under Adversarial Attacks
+### 3. Visualizing Neural Network Behavior Under Adversarial Attacks
 
 The core logic for visualizing how neural networks behave under adversarial attacks is implemented in `proximity_methods.py`, which defines two main analysis methods - `compute_ratio()` and `compute_priximity()`. These methods aim to examine how internal activations evolve across each layer when adversarial inputs are passed through the network.
 
