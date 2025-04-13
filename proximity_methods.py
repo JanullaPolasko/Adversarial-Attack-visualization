@@ -87,8 +87,8 @@ def compute_method_ratio(dataset, model_type, attacks, orig_class, pred_class, k
     for lay in tqdm(range(len(layers))):
         torch.cuda.empty_cache()
         #get activation in training space for each layer
-        train_activs = activations(model, x_train,leaf_modules= leaf_modules,layers= layers[lay], pretrained=pretrained, flat= fl)
-        adv_activs = activations(model, adv_x, leaf_modules= leaf_modules,layers= layers[lay], pretrained=pretrained, flat =fl)
+        train_activs = activations(model, x_train,leaf_modules= leaf_modules,layers= layers[lay], Resnet= model_type == "RESNET", flat= fl)
+        adv_activs = activations(model, adv_x, leaf_modules= leaf_modules,layers= layers[lay],Resnet= model_type == "RESNET", flat =fl)
 
         #knn for every adv in training space
         nb = get_neigh(adv_activs, k, train_activs)
@@ -208,8 +208,8 @@ def compute_method_projection(dataset, model_type, attacks, orig_class, pred_cla
     for lay in tqdm(range(n_layers)): 
         torch.cuda.empty_cache()
 
-        data_activs = activations(model, x_train,leaf_modules= leaf_modules, layers= layers[lay], Resnet=pretrained, flat= fl)
-        x_activs = activations(model, x_adv, leaf_modules= leaf_modules, layers= layers[lay], Resnet=pretrained, flat =fl)
+        data_activs = activations(model, x_train,leaf_modules= leaf_modules, layers= layers[lay], Resnet= model_type == "RESNET", flat= fl)
+        x_activs = activations(model, x_adv, leaf_modules= leaf_modules, layers= layers[lay], Resnet= model_type == "RESNET", flat =fl)
         
         # GET COEFICIENT ALPHA AND KNN -optimization problem
         nb_is, ks = get_coefs(x_activs, k, data_activs, y_train, classes)
