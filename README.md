@@ -1,6 +1,6 @@
 # Adversarial Attack Visualization
 
-This repository provides tools to train neural networks (FC, CONV, ResNet), generate adversarial examples (L0, L1, L2, Linf), and visualize how these attacks influence the internal behavior of neural networks using methods such as KNN counting and manifold proximity analysis.
+This repository focuses on visualizing how adversarial attacks (L0, L1, L2, Linf) affect the internal behavior of trained neural networks using methods such as KNN counting and manifold proximity analysis. It also provides tools for training neural networks (FC, CONV, ResNet) and generating adversarial examples to support these visualizations
 
 For a more detailed explanation of the theory and methodology behind this analysis, see the article:  [Understanding Misclassification Through Manifolds](https://arxiv.org/abs/2204.05764)
 
