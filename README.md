@@ -1,6 +1,6 @@
 # Adversarial Attack Visualization
 
-This repository contains code for training neural networks (Fully Connected, Convolutional, ResNet) and implementing adversarial attacks (L0, L1, L2, Linf). The project also includes methods to visualize the impact of these attacks using K-Nearest Neighbors (KNN) counting and manifold proximity techniques.
+This repository provides tools to train neural networks (FC, CONV, ResNet), generate adversarial examples (L0, L1, L2, Linf), and visualize how these attacks influence the internal behavior of neural networks using methods such as KNN counting and manifold proximity analysis.
 
 ## Features
 
@@ -24,10 +24,6 @@ Clone the repository to your local machine:
 
 Install the required packages:
 `pip install -r requirements.txt `
-
-# Adversarial Attack Visualization
-
-This repository provides tools to train neural networks (FC, CONV, ResNet), generate adversarial examples (L0, L1, L2, Linf), and visualize how these attacks influence the internal behavior of neural networks using methods such as KNN counting and manifold proximity analysis.
 
 ##  Usage
 
