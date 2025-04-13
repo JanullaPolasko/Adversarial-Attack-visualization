@@ -10,8 +10,8 @@ This repository provides tools to train neural networks (FC, CONV, ResNet), gene
 
 ## Requirements
 
-- Python 3.11
-- PyTorch
+- Python 3.9 - 3.11
+- PyTorch (if gpu is avaible use cuda version)
 - NumPy
 - Matplotlib 
 - Pytorch Lighting
