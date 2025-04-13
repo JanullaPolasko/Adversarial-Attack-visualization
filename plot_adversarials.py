@@ -12,7 +12,7 @@ from datasets import load_data, calculate_mean_std, unnormalize_image
 from networks import get_dataset_mapping
 
 
-def plot_adversarials(dataset_name, network_type, attack='L0', run=0, loss = nn.CrossEntropyLoss(), n_from_all=False, eps=0.15, n_adv=1, cols=3, n_show=6, fsizex=23, fsizey=32):
+def plot_adversarials(dataset_name, network_type, attack='L0', run=0, loss = nn.CrossEntropyLoss(),  eps=0.15, n_show=6, fsizex=23):
     """
     This function visualizes adversarial examples by displaying the original and adversarial images for a specified attack type. The images are displayed in a grid format with the original image in the first row and the adversarial image in the second row.
 
@@ -22,13 +22,9 @@ def plot_adversarials(dataset_name, network_type, attack='L0', run=0, loss = nn.
     - attack (str, optional): The type of attack used (e.g., 'L0', 'L1', 'L2', 'Linf'). Default is 'L0'.
     - run (int, optional): The run index (default is 0).
     - loss (torch.nn.Module, optional): The loss function used in the model. Default is nn.CrossEntropyLoss().
-    - n_from_all (bool, optional): If True, shows examples for all attacks; if False, only for the chosen attack. Default is False.
     - eps (float, optional): The epsilon parameter for the attack. Default is 0.15.
-    - n_adv (int, optional): The number of adversarial examples to show for each attack. Default is 1.
-    - cols (int, optional): The number of columns in the grid for displaying images. Default is 3.
     - n_show (int, optional): The number of examples to display. Default is 6.
     - fsizex (int, optional): Font size for titles and axis labels in the plot. Default is 23.
-    - fsizey (int, optional): Font size for the y-axis labels. Default is 32.
 
     Returns:
     - None (the function saves the plot to a file).
@@ -364,7 +360,7 @@ def plot_single_attack_Linf_all_eps(dataset_name, network_type, sample_idx=0, ru
 
 
 #USED
-plot_adversarials(dataset_name='CIFAR10', network_type='CONV', attack='L0', n_from_all=False, eps=0.02, n_show=6, run = 0)
+plot_adversarials(dataset_name='CIFAR10', network_type='CONV', attack='L0',eps=0.02, n_show=6, run = 0)
 #plot_adversarials(dataset_name='MNIST', network_type='CONV', attack='L1', n_from_all=False, eps=0.15, n_show=6)
 # plot_adversarials(dataset_name='SVHN', network_type='CONV', attack='L2', n_from_all=False, eps=0.15, target=5, n_show=6)
 
