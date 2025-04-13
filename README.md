@@ -25,7 +25,7 @@ This repository provides tools to train neural networks (FC, CONV, ResNet), gene
 Clone the repository to your local machine:
 `git clone https://github.com/JanullaPolasko/Adversarial-Attack-visualization.git `
 
-## Theory Behind the Method
+## Theory Behind the Methods
 
 The analysis is based on two complementary techniques that help explain how adversarial examples propagate through a neural network.
 
