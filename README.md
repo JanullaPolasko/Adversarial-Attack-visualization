@@ -68,15 +68,19 @@ The analysis begins by loading pre-generated adversarial examples and comparing 
 
 The visualization process uses various helper functions from `proximity_utils.py`, including tools for KNN counting, activation extraction, and structured comparison. A full example of how to apply these methods can be found in the `save_methods.py`. It contains two functions, `using_projection` and `using_ratio`, which demonstrate how to call the analysis pipeline and visualize the results using tools from `visualization_utils.py`. These examples serve as practical guides for performing layerwise analysis and plotting model behavior under adversarial conditions.
 
+<h3>Example of Using KNN Method</h3>
+<p align="center">
+  <img src="images/net_CONV_CIFAR10_attack_L0.png" alt="CIFAR10 L0" width="400"/>
+  <img src="images/net_RESNET_MNIST_attack_Linf_Dev.png" alt="RESNET Linf Dev" width="400"/>
+</p>
 
-<img src="images/net_CONV_CIFAR10_attack_L0.png" alt="CIFAR10 L0" width="350"/>
 
+
+<h3>Example of Using Proximity to manifolds method</h3>
+<p align="center">
 <img src="images/net_CONV_MNIST_attack_L0_(4, 9).png" alt="MNIST L0 4→9" width="350"/>
-
-<img src="images/net_RESNET_MNIST_attack_Linf_Dev.png" alt="RESNET Linf Dev" width="350"/>
-
 <img src="images/projection_CONV_MNIST_attack_L0_(2, 8).png" alt="Projection 2→8" width="350"/>
-
+</p>
 
 
 
