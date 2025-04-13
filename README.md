@@ -13,17 +13,25 @@ This repository provides tools to train neural networks (FC, CONV, ResNet), gene
 - Python 3.11
 - PyTorch
 - NumPy
-- Matplotlib (for visualization)
+- Matplotlib 
 - Pytorch Lighting
-- art.attacks.evasion art.estimators.classification
+- [Adversarial Robustness Toolbox (ART)](https://github.com/Trusted-AI/adversarial-robustness-toolbox)  
+- tqdm  
+- pickkle
+- gc
 
 ## Installation
 
 Clone the repository to your local machine:
 `git clone https://github.com/JanullaPolasko/Adversarial-Attack-visualization.git `
 
-Install the required packages:
-`pip install -r requirements.txt `
+## Theory Behind the Method
+
+The analysis is based on two complementary techniques that help explain how adversarial examples propagate through a neural network.
+
+The first method examines the nearest neighbors of adversarial examples within the activation space of each layer. By comparing how many of these neighbors belong to the original versus the predicted (incorrect) class, we can observe how the identity of the example shifts as it moves through the network. This technique gives an intuitive and statistical measure of how adversarial perturbations affect the internal representation of data.
+
+The second method focuses on measuring distances from adversarial examples to class-specific manifolds, which are approximated using convex combinations of nearby training samples. By projecting the adversarial example onto these manifolds, we can determine whether it still lies close to its original class or has moved toward the predicted class. This geometric view provides a more continuous and structure-aware way of tracking how adversarial inputs diverge from expected behavior.
 
 ##  Usage
 
