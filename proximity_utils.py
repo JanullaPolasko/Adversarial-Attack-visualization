@@ -51,7 +51,7 @@ def get_layers(model, pretrained = None):
 
     return layers, fl, layer_names, leaf_modules
 
-def activations(model, data, leaf_modules, layers =0,  flat=True, pretrained = False, batch=64):
+def activations(model, data, leaf_modules, layers =0,  flat=True, Resnet = False, batch=64):
     """
     Extracts activations from the specified layer(s) using the provided modules.
     
@@ -81,7 +81,7 @@ def activations(model, data, leaf_modules, layers =0,  flat=True, pretrained = F
     if isinstance(data, np.ndarray):
         data = torch.from_numpy(data).float().to(device)
 
-    if not pretrained:
+    if not Resnet:
         if isinstance(layers, int):
             layers = [layers] 
 
