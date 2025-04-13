@@ -25,8 +25,41 @@ Clone the repository to your local machine:
 Install the required packages:
 `pip install -r requirements.txt `
 
-## Usage
-To zaisiti aby eveyrythin go smoothly we ensure to put your model name, type model_class ans num_classes to the get_dataset_mapping() in network.py. this function is loading in every script and here it will be lokin for all the nesseceteries. then add neural network class to the network.py or use some of which is already there. If the model is pretreined in torch  - put in get dataset mapping on last position True, otherwise False
-To train a model and apply adversarial attacks, run the appropriate scripts. For example, you can start by training a model:
-`python train.py`
+# Adversarial Attack Visualization
+
+This repository provides tools to train neural networks (FC, CONV, ResNet), generate adversarial examples (L0, L1, L2, Linf), and visualize how these attacks influence the internal behavior of neural networks using methods such as KNN counting and manifold proximity analysis.
+
+##  Usage
+
+To use the repository, begin by editing the `get_dataset_mapping()` function in `network.py`. Here, you need to specify the model's name, its class, and the number of output classes. This function is called across all scripts to automatically locate the necessary components for the given configuration.
+
+Next, either add your own neural network class to `network.py` or select one of the predefined models already available. If your model is pretrained using PyTorch, set the last parameter in `get_dataset_mapping()` to `True`; otherwise, set it to `False`.
+
+### Saving
+To control where models, adversarial examples, datasets, and visualization outputs are stored, adjust the paths in `datapath.py`.
+
+##  0. Datasets
+
+The project supports four datasets: SVHN, MNIST, CIFAR-10, and Fashion-MNIST. These are defined in `datasets.py`, where they are loaded, normalized, and prepared for training and evaluation.
+
+##  1. Training
+
+Training is handled by the `train.py` script and is implemented using the PyTorch Lightning library. The script will train model in  `get_dataset_mapping()`, save it into a subfolder named `/network` inside the defined `datapath()`, and plot the training progress using the `compute_dev_plot()` function from `visualization_utils.py`. To improve reliability the training process is repeated five times by default (this can be configured via the `run` parameter), with each model saved under a different identifier.
+
+## 2. Crafting Adversarial Examples
+
+To generate adversarial examples, configure the `run_adversarial_attacks()` function inside the `generate_adversarial.py` script. Here, you can specify the model, dataset, and the type of attack you wish to apply. The attacks are implemented in the `adversarial_utils.py` script. Specifically, L2, L1, and Linf attacks use the Adversarial Robustness Toolbox (ART), while the L0 attack is handled by a custom implementation in the `iterative_pixel_attack()` function.
+
+Once the generation process is complete, the adversarial examples will be saved in the `/adversarials` subfolder, located within the directory defined by `datapath.py`.
+
+At the end of `generate_adversarial.py`, you will find an example of how to call the attack generation function, along with how to visualize the resulting adversarial examples using the `plot_adversarials()` function from `plot_adversarials.py`.
+
+## 3. Visualizing Neural Network Behavior Under Adversarial Attacks
+
+The core logic for visualizing how neural networks behave under adversarial attacks is implemented in `proximity_methods.py`, which defines two main analysis methods. These methods aim to examine how internal activations evolve across each layer when adversarial inputs are passed through the network.
+
+The analysis begins by loading pre-generated adversarial examples and comparing their internal activations to those of clean training samples, layer by layer. This layerwise tracking helps reveal patterns of sensitivity and feature distortion under attack.
+
+The visualization process uses various helper functions from `proximity_utils.py`, including tools for KNN counting, activation extraction, and structured comparison. A full example of how to apply these methods can be found in the `save_methods()` function, which demonstrates the entire pipeline for visualizing adversarial behavior.
+
 
