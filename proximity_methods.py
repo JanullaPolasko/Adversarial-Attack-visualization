@@ -13,7 +13,24 @@ from networks import get_dataset_mapping
 
 
 def compute_method_ratio(dataset, model_type, attacks, orig_class, pred_class, k=100, run = 0, save = True):
-    #counting nearest neighbours
+    """
+    Analyze how adversarial examples behave across the network layers using K-Nearest Neighbors (KNN) counting.
+
+    Parameters:
+    - dataset (str): Name of the dataset (e.g., 'MNIST', 'CIFAR-10').
+    - model_type (str): Type of the model (e.g., 'FC', 'CONV', 'RESNET').
+    - attacks (str): Name of the adversarial attack used (e.g., 'L2', 'Linf').
+    - orig_class (int): Original (true) class label before the attack.
+    - pred_class (int): Misclassified (predicted) class label after the attack.
+    - k (int): Number of nearest neighbors to consider in KNN (default: 100).
+    - run (int): Run ID for selecting a trained model (default: 0).
+    - save (bool): Whether to save the results to file (default: True).
+
+    Returns:
+    - dict: Dictionary containing average and standard deviation of neighbor counts for original and predicted classes 
+            across all layers.
+    """
+
     torch.cuda.empty_cache()
     device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
     
@@ -64,7 +81,6 @@ def compute_method_ratio(dataset, model_type, attacks, orig_class, pred_class, k
     #GET LAYERS
     layers, fl, _, leaf_modules = get_layers(model, pretrained )
 
-
     orig_count = np.zeros((len(layers), adv_x.shape[0]))
     pred_count = np.zeros((len(layers), adv_x.shape[0]))
 
@@ -105,11 +121,29 @@ def compute_method_ratio(dataset, model_type, attacks, orig_class, pred_class, k
 
 
 def compute_method_projection(dataset, model_type, attacks, orig_class, pred_class, k=50, run =0, save = True):
-    # Computing Distances to Class-Specific Manifolds
+    """
+    Analyze adversarial example behavior by projecting them onto class-specific manifolds 
+    using convex hull approximation and evaluating distances.
+
+    Parameters:
+    - dataset (str): Name of the dataset (e.g., 'MNIST', 'FMNIST').
+    - model_type (str): Type of the model used (e.g., 'RESNET', 'CONV').
+    - attacks (str): Name of the adversarial attack applied (e.g., 'L2', 'L0').
+    - orig_class (int): True class label before the attack.
+    - pred_class (int): Incorrect predicted label after the attack.
+    - k (int): Number of nearest neighbors to use when constructing convex manifolds (default: 50).
+    - run (int): Index of the training run to load the model (default: 0).
+    - save (bool): Whether to save the results and projections to disk (default: True).
+
+    Returns:
+    - dict: Contains average and standard deviation of distances to original and predicted class manifolds per layer, 
+            along with projection vectors used in the analysis.
+    """
 
     device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
     # MODEL INFO
     _,  model = load_model_eval(dataset, model_type, run, device= device)
+    
     #ART LOADING FOR
     (x_train, y_train), (x_test, y_test), input_shape, classes = load_data_for_art(dataset, batch_size_train=60000, batch_size_test=10000)
     eps = 0.12 if dataset in ['MNIST', 'FMNIST'] else 0.04 #decide epsilon in Linf
@@ -177,7 +211,6 @@ def compute_method_projection(dataset, model_type, attacks, orig_class, pred_cla
         data_activs = activations(model, x_train,leaf_modules= leaf_modules, layers= layers[lay], Resnet=pretrained, flat= fl)
         x_activs = activations(model, x_adv, leaf_modules= leaf_modules, layers= layers[lay], Resnet=pretrained, flat =fl)
         
-        # print('activation1 done')
         # GET COEFICIENT ALPHA AND KNN -optimization problem
         nb_is, ks = get_coefs(x_activs, k, data_activs, y_train, classes)
         base = x_train_flat[nb_is] 
@@ -185,9 +218,9 @@ def compute_method_projection(dataset, model_type, attacks, orig_class, pred_cla
         projections = np.einsum('ijk,ij->ik', base, ks)
         layer_projections[lay] = projections
 
-        # Reshape projections to input to imsge again (n_samples, flattened) --> (n_samples, C, H, W)
-        #ako keby to boli nove obrazky z adv x, sby sa podobali na trenovacie vzorky danej triedy
-        #Ak by sa adversariálny príklad opravil tak, aby sa podobal na trénovacie dáta, akú triedu by model priradil?
+        # Reshape projections from flattened vectors back to image format (n_samples, flattened) --> (n_samples, C, H, W)
+        # These projections represent new, "corrected" versions of the adversarial examples that resemble training samples of the target class.
+        # The idea is to ask: if the adversarial example were modified to look more like its training-class neighbors, how would the model classify it?
         projection_x = torch.from_numpy(projections).float().to(device).reshape(-1, *input_shape)
 
          #CHECK COEF ALPHA SUM
