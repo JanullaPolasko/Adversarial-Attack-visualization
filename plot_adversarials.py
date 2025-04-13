@@ -358,15 +358,3 @@ def plot_single_attack_Linf_all_eps(dataset_name, network_type, sample_idx=0, ru
 
 
 
-
-#USED
-plot_adversarials(dataset_name='CIFAR10', network_type='CONV', attack='L0',eps=0.02, n_show=6, run = 0)
-#plot_adversarials(dataset_name='MNIST', network_type='CONV', attack='L1', n_from_all=False, eps=0.15, n_show=6)
-# plot_adversarials(dataset_name='SVHN', network_type='CONV', attack='L2', n_from_all=False, eps=0.15, target=5, n_show=6)
-
-#plot_attack_with_diff_everydatasets('L0')
-#plot_attack_with_diff_everydatasets('L2')
-
-#plot_single_attack_Linf_all_eps("MNIST", "CONV")
-#plot_single_attack_Linf_all_eps("CIFAR10", "CONV")
-

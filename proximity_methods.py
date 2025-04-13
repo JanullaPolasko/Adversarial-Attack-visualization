@@ -3,7 +3,7 @@ import torch
 from adversarial_utils import load_model_eval, load_data_for_art, load_adversarials
 from tqdm import tqdm
 from adversarial_utils import load_model_eval, load_data_for_art, load_adversarials
-from proximity_utils import activations, get_neigh, get_coefs, project_points, get_layers, activations_orignal
+from proximity_utils import activations, get_neigh, get_coefs, project_points, get_layers
 from tqdm import tqdm
 import gc
 from datapath import my_path

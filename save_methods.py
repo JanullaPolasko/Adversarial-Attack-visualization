@@ -4,7 +4,7 @@ parentdir = os.path.dirname(currentdir)
 sys.path.append(parentdir)
 from datapath import my_path
 from proximity_methods import  compute_method_ratio, compute_method_projection
-from proximity_utils import get_layers
+from proximity_utils import get_layers, targets_matrix
 import numpy as np
 from visualization_utils import plot_with_dev_subplot, plot_with_dev, plot_projection
 from adversarial_utils import  load_model_eval

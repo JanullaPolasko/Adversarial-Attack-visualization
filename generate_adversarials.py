@@ -10,6 +10,7 @@ from datapath import my_path
 from adversarial_utils import compute_attack
 import subprocess
 from adversarial_utils import load_model_eval
+from plot_adversarials import plot_adversarials
 
 def run_adversarial_attacks(attack_type='L_inf', dataset='CIFAR10', model_type='CONV', device=None, run= 0 ):
     '''
@@ -76,43 +77,7 @@ def run_adversarial_attacks(attack_type='L_inf', dataset='CIFAR10', model_type='
     return succes_rate
 
 if __name__ == "__main__":
+    #example of creating AEs with plotting
     run_adversarial_attacks(attack_type='L0', dataset="MNIST", model_type="CONV", run=0)
-    # run_adversarial_attacks(attack_type='L2', dataset="MNIST", model_type="CONV", run=0)
-    # run_adversarial_attacks(attack_type='L1', dataset="MNIST", model_type="CONV", run=0)
-    # run_adversarial_attacks(attack_type='L_inf', dataset="MNIST", model_type="CONV", run=0)
-    
-    # run_adversarial_attacks(attack_type='L0', dataset="MNIST", model_type="FC", run=0)
-    # run_adversarial_attacks(attack_type='L2', dataset="MNIST", model_type="FC", run=0)
-    # run_adversarial_attacks(attack_type='L1', dataset="MNIST", model_type="FC", run=0)
-    # run_adversarial_attacks(attack_type='L_inf', dataset="MNIST", model_type="FC", run=0)
-
-    # run_adversarial_attacks(attack_type='L1', dataset="CIFAR10", model_type="CONV", run=0)
-    # run_adversarial_attacks(attack_type='L2', dataset="CIFAR10", model_type="CONV", run=0)
-    # run_adversarial_attacks(attack_type='L0', dataset="CIFAR10", model_type="CONV", run=0)
-    # run_adversarial_attacks(attack_type='L_inf', dataset="CIFAR10", model_type="CONV", run=0)
-
-    # run_adversarial_attacks(attack_type='L1', dataset="FMNIST", model_type="CONV", run=0)
-    # run_adversarial_attacks(attack_type='L2', dataset="FMNIST", model_type="CONV", run=0)
-    # run_adversarial_attacks(attack_type='L0', dataset="FMNIST", model_type="CONV", run=0)
-    # run_adversarial_attacks(attack_type='L_inf', dataset="FMNIST", model_type="CONV", run=0)
-
-    # run_adversarial_attacks(attack_type='L1', dataset="SVHN", model_type="CONV", run=0)
-    # run_adversarial_attacks(attack_type='L2', dataset="SVHN", model_type="CONV", run=0)
-    # run_adversarial_attacks(attack_type='L0', dataset="SVHN", model_type="CONV", run=0)
-    # run_adversarial_attacks(attack_type='L_inf', dataset="SVHN", model_type="CONV", run=0)
-
-    #run_adversarial_attacks(attack_type='L1', dataset="MNIST", model_type="RESNET", run=0)
-    # run_adversarial_attacks(attack_type='L2', dataset="MNIST", model_type="RESNET", run=0)
-    # run_adversarial_attacks(attack_type='L0', dataset="MNIST", model_type="RESNET", run=0)
-    #run_adversarial_attacks(attack_type='L_inf', dataset="MNIST", model_type="RESNET", run=0)   
-    
-    # run_adversarial_attacks(attack_type='L1', dataset="CIFAR10", model_type="RESNET", run=0)
-    # run_adversarial_attacks(attack_type='L2', dataset="CIFAR10", model_type="RESNET", run=0)
-    # run_adversarial_attacks(attack_type='L0', dataset="CIFAR10", model_type="RESNET", run=0)
-    # run_adversarial_attacks(attack_type='L_inf', dataset="CIFAR10", model_type="RESNET", run=0)
-
-    #run_adversarial_attacks(attack_type='L0', dataset="MNIST", model_type="VIT", run=0)
-    # run_adversarial_attacks(attack_type='L_inf', dataset="MNIST", model_type="VIT", run=0)
-    # run_adversarial_attacks(attack_type='L1', dataset="MNIST", model_type="VIT", run=0)
-    # run_adversarial_attacks(attack_type='L2', dataset="MNIST", model_type="VIT", run=0)
+    plot_adversarials(dataset_name='CIFAR10', network_type='CONV', attack='L0',eps=0.02, n_show=6, run = 0)
 
