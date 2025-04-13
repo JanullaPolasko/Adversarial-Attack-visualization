@@ -2,6 +2,8 @@
 
 This repository provides tools to train neural networks (FC, CONV, ResNet), generate adversarial examples (L0, L1, L2, Linf), and visualize how these attacks influence the internal behavior of neural networks using methods such as KNN counting and manifold proximity analysis.
 
+For a more detailed explanation of the theory and methodology behind this analysis, see the article:  [Understanding Misclassification Through Manifolds](https://arxiv.org/abs/2204.05764)
+
 ## Features
 
 - **Neural Network Training**: Train different types of neural networks including Fully Connected (FC), Convolutional (Conv), and ResNet architectures.
