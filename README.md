@@ -58,6 +58,9 @@ Once the generation process is complete, the adversarial examples will be saved 
 
 At the end of `generate_adversarial.py`, you will find an example of how to call the attack generation function, along with how to visualize the resulting adversarial examples using the `plot_adversarials()` function from `plot_adversarials.py`.
 ![Example of AEs using L2 attack ](images/Example_Everything_L2_adversarials.png)
+
+<img src="images/Example_Everything_L2_adversarials.png" alt="L2 Examples" width="400"/>
+
 ### 3. Visualizing Neural Network Behavior Under Adversarial Attacks
 
 The core logic for visualizing how neural networks behave under adversarial attacks is implemented in `proximity_methods.py`, which defines two main analysis methods - `compute_ratio()` and `compute_priximity()`. These methods aim to examine how internal activations evolve across each layer when adversarial inputs are passed through the network.
