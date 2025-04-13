@@ -52,10 +52,11 @@ At the end of `generate_adversarial.py`, you will find an example of how to call
 
 ## 3. Visualizing Neural Network Behavior Under Adversarial Attacks
 
-The core logic for visualizing how neural networks behave under adversarial attacks is implemented in `proximity_methods.py`, which defines two main analysis methods. These methods aim to examine how internal activations evolve across each layer when adversarial inputs are passed through the network.
+The core logic for visualizing how neural networks behave under adversarial attacks is implemented in `proximity_methods.py`, which defines two main analysis methods - `compute_ratio()` and `compute_priximity()`. These methods aim to examine how internal activations evolve across each layer when adversarial inputs are passed through the network.
 
-The analysis begins by loading pre-generated adversarial examples and comparing their internal activations to those of clean training samples, layer by layer. This layerwise tracking helps reveal patterns of sensitivity and feature distortion under attack.
+The analysis begins by loading pre-generated adversarial examples and comparing their internal activations to those of clean training samples, layer by layer. This layerwise tracking helps reveal patterns of sensitivity and feature distortion under attack. In the end the result are also saved under subfolder named `/distanes` inside the defined `datapath()`.
 
-The visualization process uses various helper functions from `proximity_utils.py`, including tools for KNN counting, activation extraction, and structured comparison. A full example of how to apply these methods can be found in the `save_methods()` function, which demonstrates the entire pipeline for visualizing adversarial behavior.
+The visualization process uses various helper functions from `proximity_utils.py`, including tools for KNN counting, activation extraction, and structured comparison. A full example of how to apply these methods can be found in the `save_methods.py`. It contains two functions, `using_projection` and `using_ratio`, which demonstrate how to call the analysis pipeline and visualize the results using tools from `visualization_utils.py`. These examples serve as practical guides for performing layerwise analysis and plotting model behavior under adversarial conditions.
+
 
 
