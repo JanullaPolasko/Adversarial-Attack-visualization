@@ -19,7 +19,7 @@ For a more detailed explanation of the theory and methodology behind this analys
 - Pytorch Lighting
 - [Adversarial Robustness Toolbox (ART)](https://github.com/Trusted-AI/adversarial-robustness-toolbox)  
 - tqdm  
-- pickkle
+- pickle
 - gc
 
 ## Installation
