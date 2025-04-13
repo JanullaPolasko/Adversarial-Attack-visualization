@@ -57,7 +57,7 @@ To generate adversarial examples, configure the `run_adversarial_attacks()` func
 Once the generation process is complete, the adversarial examples will be saved in the `/adversarials` subfolder, located within the directory defined by `datapath.py`.
 
 At the end of `generate_adversarial.py`, you will find an example of how to call the attack generation function, along with how to visualize the resulting adversarial examples using the `plot_adversarials()` function from `plot_adversarials.py`.
-
+![Example of AEs using L2 attack ](images/Example_Everything_L2_adversarials.png)
 ### 3. Visualizing Neural Network Behavior Under Adversarial Attacks
 
 The core logic for visualizing how neural networks behave under adversarial attacks is implemented in `proximity_methods.py`, which defines two main analysis methods - `compute_ratio()` and `compute_priximity()`. These methods aim to examine how internal activations evolve across each layer when adversarial inputs are passed through the network.
@@ -65,6 +65,11 @@ The core logic for visualizing how neural networks behave under adversarial atta
 The analysis begins by loading pre-generated adversarial examples and comparing their internal activations to those of clean training samples, layer by layer. This layerwise tracking helps reveal patterns of sensitivity and feature distortion under attack. In the end the result are also saved under subfolder named `/distanes` inside the defined `datapath()`.
 
 The visualization process uses various helper functions from `proximity_utils.py`, including tools for KNN counting, activation extraction, and structured comparison. A full example of how to apply these methods can be found in the `save_methods.py`. It contains two functions, `using_projection` and `using_ratio`, which demonstrate how to call the analysis pipeline and visualize the results using tools from `visualization_utils.py`. These examples serve as practical guides for performing layerwise analysis and plotting model behavior under adversarial conditions.
+
+![CIFAR10 L0](images/net_CONV_CIFAR10_attack_L0.png)
+![MNIST L0 4→9](images/net_CONV_MNIST_attack_L0_(4, 9).png)
+![RESNET Linf Dev](images/net_RESNET_MNIST_attack_Linf_Dev.png)
+![Projection 2→8](images/projection_CONV_MNIST_attack_L0_(2, 8).png)
 
 
 
