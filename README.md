@@ -78,8 +78,8 @@ The visualization process uses various helper functions from `proximity_utils.py
 
 <h3>Example of Using Proximity to manifolds method</h3>
 <p align="center">
-<img src="images/net_CONV_MNIST_attack_L0_(4, 9).png" alt="MNIST L0 4→9" width="350"/>
-<img src="images/projection_CONV_MNIST_attack_L0_(2, 8).png" alt="Projection 2→8" width="350"/>
+<img src="images/net_CONV_MNIST_attack_L0_(4, 9).png" alt="MNIST L0 4→9" width="400"/>
+<img src="images/projection_CONV_MNIST_attack_L0_(2, 8).png" alt="Projection 2→8" width="500"/>
 </p>
 
 
