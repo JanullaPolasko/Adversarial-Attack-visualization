@@ -84,5 +84,7 @@ The visualization process uses various helper functions from `proximity_utils.py
 <img src="images/projection_CONV_MNIST_attack_L0_(2, 8).png" alt="Projection 2→8" width="500"/>
 </p>
 
-
+##  Tips for Usage
+- The `generate_adversarial` script may take a long time to run. Make sure your GPU is connected and CUDA is enabled.
+- If the proximity methods crash or stop unexpectedly, it's likely due to a memory error. Try reducing the size of the training dataset used for activation extraction to avoid out-of-memory issues.
 
