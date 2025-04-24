@@ -10,6 +10,7 @@ from datapath import my_path
 import pickle
 import subprocess
 from networks import get_dataset_mapping
+from sklearn.decomposition import PCA
 
 
 def compute_method_ratio(dataset, model_type, attacks, orig_class, pred_class, k=100, run = 0, save = True):
@@ -32,7 +33,7 @@ def compute_method_ratio(dataset, model_type, attacks, orig_class, pred_class, k
     """
 
     torch.cuda.empty_cache()
-    device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     
     # MODEL INFO
     _,  model = load_model_eval(dataset, model_type, run, device= device)
@@ -112,7 +113,7 @@ def compute_method_ratio(dataset, model_type, attacks, orig_class, pred_class, k
 
     if save:
         subprocess.run(['mkdir', '-p', f"{my_path()}/distances/ratio"])
-        filename = my_path() + f'/distances/ratio/net_{model_type}_{dataset}_attack_{attacks}_ratio_method.pkl'
+        filename = my_path() + f'/distances/ratio/net_{model_type}_{dataset}_attack_{attacks}_orig_{orig_class}_pred_{pred_class}_ratio_method.pkl'
         with open(filename, 'wb') as f:
             pickle.dump(ratio_method, f)
         print('file saved to:',filename)
@@ -120,10 +121,10 @@ def compute_method_ratio(dataset, model_type, attacks, orig_class, pred_class, k
     return ratio_method
 
 
-def compute_method_projection(dataset, model_type, attacks, orig_class, pred_class, k=50, run =0, save = True):
+def compute_method_projection(dataset, model_type, attacks, orig_class, pred_class, k=50, run =0, save = True, pca_reduced =400):
     """
-    Analyze adversarial example behavior by projecting them onto class-specific manifolds 
-    using convex hull approximation and evaluating distances.
+     Analyze adversarial example behavior by projecting them onto class-specific manifolds
+    using convex hull approximation, with optional PCA-based dimensionality reduction.
 
     Parameters:
     - dataset (str): Name of the dataset (e.g., 'MNIST', 'FMNIST').
@@ -134,13 +135,15 @@ def compute_method_projection(dataset, model_type, attacks, orig_class, pred_cla
     - k (int): Number of nearest neighbors to use when constructing convex manifolds (default: 50).
     - run (int): Index of the training run to load the model (default: 0).
     - save (bool): Whether to save the results and projections to disk (default: True).
+    - pca_reduced (int): Maximum number of principal components to keep when reducing
+      activation dimensionality before projection (default: 400).
 
     Returns:
     - dict: Contains average and standard deviation of distances to original and predicted class manifolds per layer, 
-            along with projection vectors used in the analysis.
+            along with projection vectors used in the analysis ('orig_avg', 'pred_avg', 'orig_std', 'pred_std', and 'layer_projections').
     """
 
-    device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     # MODEL INFO
     _,  model = load_model_eval(dataset, model_type, run, device= device)
     
@@ -149,22 +152,17 @@ def compute_method_projection(dataset, model_type, attacks, orig_class, pred_cla
     eps = 0.12 if dataset in ['MNIST', 'FMNIST'] else 0.04 #decide epsilon in Linf
     original, original_labels, x_test_adv, y_test_adv = load_adversarials(attacks, dataset, model_type, eps= eps)
 
-
-    #WE NEED TO TREAT RESNET DIFFERENTLY (skip connection and capacity)
-    if model_type == 'RESNET' :
-        sample_size = 1000
-        if len(x_train) > sample_size:
-            indices = np.random.choice(len(x_train), sample_size, replace=False)
-            x_train = x_train[indices]
-            y_train = y_train[indices]
-
     # Convert data to torch tensors on GPU
     x_train = torch.from_numpy(x_train).float().to(device)
     y_train = torch.from_numpy(y_train).to(device)
     x_test_adv = torch.from_numpy(x_test_adv).float().to(device)
     y_test_adv = torch.from_numpy(y_test_adv).to(device)
     original_labels = torch.from_numpy(original_labels).to(device)
+    torch.cuda.empty_cache()
 
+
+    mask = (y_train == orig_class) | (y_train == pred_class)
+    x_train, y_train = x_train[mask], y_train[mask]
 
     #DATA FROM 2 CLASSES
     orig_mask = y_train == orig_class  
@@ -172,7 +170,7 @@ def compute_method_projection(dataset, model_type, attacks, orig_class, pred_cla
     pred_mask = y_train == pred_class  
     x_pred_cls = x_train[pred_mask]
 
-    #MASK COMPUTATION
+    # #MASK COMPUTATION
     or_mask = (original_labels == orig_class)  
     x_adv = x_test_adv[or_mask]
     y_adv = y_test_adv[or_mask]
@@ -201,6 +199,7 @@ def compute_method_projection(dataset, model_type, attacks, orig_class, pred_cla
     dist_to_orig = np.zeros((n_layers, n_samples))
     dist_to_pred = np.zeros((n_layers, n_samples))
     counts = np.zeros((n_layers, 3))
+    
 
     # RESHAPE TO 1D (N, H*W)  (layer, sample, flattened_input_size)
     layer_projections = np.zeros((n_layers, n_samples, x_train_flat.shape[1]))
@@ -210,9 +209,22 @@ def compute_method_projection(dataset, model_type, attacks, orig_class, pred_cla
 
         data_activs = activations(model, x_train,leaf_modules= leaf_modules, layers= layers[lay], Resnet= model_type == "RESNET", flat= fl)
         x_activs = activations(model, x_adv, leaf_modules= leaf_modules, layers= layers[lay], Resnet= model_type == "RESNET", flat =fl)
-        
         # GET COEFICIENT ALPHA AND KNN -optimization problem
-        nb_is, ks = get_coefs(x_activs, k, data_activs, y_train, classes)
+        
+        #USING PCA FOR DIMENSIONALITY REDUCTION
+        # flatten into (n_samples, D)
+        n_train = data_activs.shape[0]
+        n_adv   = x_activs.shape[0]
+        data_activs = data_activs.reshape(n_train, -1)
+        x_activs    = x_activs.reshape(n_adv,   -1)
+        actual_dim = min(pca_reduced, n_train, data_activs.shape[1])
+
+        pca = PCA(n_components=actual_dim, svd_solver="randomized")
+        data_low = pca.fit_transform(data_activs)   
+        adv_low  = pca.transform(x_activs) 
+
+        # GET COEFICIENT ALPHA AND KNN -optimization problem
+        nb_is, ks = get_coefs(adv_low, k, data_low, y_train, classes)
         base = x_train_flat[nb_is] 
         # projection calculation (i  sample index, j is ngh index, k feature indes)
         projections = np.einsum('ijk,ij->ik', base, ks)
@@ -222,7 +234,6 @@ def compute_method_projection(dataset, model_type, attacks, orig_class, pred_cla
         # These projections represent new, "corrected" versions of the adversarial examples that resemble training samples of the target class.
         # The idea is to ask: if the adversarial example were modified to look more like its training-class neighbors, how would the model classify it?
         projection_x = torch.from_numpy(projections).float().to(device).reshape(-1, *input_shape)
-
          #CHECK COEF ALPHA SUM
         sum_ks = np.sum(ks, axis=1)
         outlier_mask = (sum_ks > 1.1) | (sum_ks < 0.9)
@@ -253,10 +264,10 @@ def compute_method_projection(dataset, model_type, attacks, orig_class, pred_cla
     orig_std =  np.std(dist_to_orig, axis=1)
     pred_std = np.std(dist_to_pred, axis=1)
 
-    projection_method = {'orig_avg': orig_avg, 'pred_avg': pred_avg, 'orig_count': orig_std, 'pred_count': pred_std, 'layer_projections': layer_projections}
+    projection_method = {'orig_avg': orig_avg, 'pred_avg': pred_avg, 'orig_std': orig_std, 'pred_std': pred_std, 'layer_projections': layer_projections}
     if save:
         subprocess.run(['mkdir', '-p', f"{my_path()}/distances/projected"])
-        filename = my_path() + f'/distances/projected/net_{model_type}_attack_{attacks}_orig_{orig_class}_pred_{pred_class}_distance.pkl'
+        filename = my_path() + f'/distances/projected/net_{model_type}_{dataset}_attack_{attacks}_orig_{orig_class}_pred_{pred_class}_distance.pkl'
         with open(filename, 'wb') as f:
             pickle.dump([orig_avg, pred_avg, layer_projections], f)
         print('file saved to:',filename)
