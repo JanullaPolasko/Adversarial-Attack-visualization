@@ -8,6 +8,7 @@ from torch import nn
 from adversarial_utils import load_adversarials, load_model_eval
 from datasets import load_data
 from networks import get_dataset_mapping
+from scipy.optimize import nnls
 
 def get_layers(model, pretrained = None):
     """
@@ -171,38 +172,28 @@ def get_neigh(points, k, x_train):
     return nb_ind
 
 
-
 def convex_projection(X, y):
     """
-    Performs convex projection of points onto a subspace defined by the training data.
+    Fast convex projection of y onto the convex hull of columns of X using non-negative least squares.
 
     Args:
-    - X (numpy array): The training data (each point in X is a point in the manifold).
-    - y (numpy array): The point to project onto the manifold.
+      - X: numpy array of shape (D, k) where each column is a neighbor point in D dimensions.
+      - y: numpy array of shape (D,)
 
     Returns:
-    - projected_point (numpy array): The projection of y onto the manifold.
-    - weights (numpy array): The weights of the convex combination of the points in X that define the projection.
+      - projected_point: numpy array of shape (D,)
+      - weights: numpy array of shape (k,)
     """
-    num_inputs = X.shape[1]
-    dim = X.shape[0]
-    
-    # Define the loss function (squared error) to minimize
-    fun = lambda w: np.sum((X.dot(w) - y) ** 2) / dim
-
-    # Constraints for the convex optimization (weights sum to 1 and are non-negative)
-    d = ({'type': 'eq', 'fun': lambda w: np.sum(w) - 1},
-         {'type': 'ineq', 'fun': lambda w: w})
-    
-    c = 0
-    while True:
-        c += 1
-        res = minimize(fun, np.zeros(num_inputs) + 1 / num_inputs, constraints=d, method='SLSQP')
-        if res.success:
-            return np.dot(X, res.x), res.x
-        else:
-            print(res.message, c, res.jac)
-            
+    # Solve non-negative least squares: min ||X w - y||_2 subject to w >= 0
+    w, _ = nnls(X, y)
+    # Normalize to make it a convex combination
+    total = w.sum()
+    if total > 0:
+        w = w / total
+    # Compute projection
+    p = X.dot(w)
+    return p, w
+ 
             
 def project_points(points, k, x_train, y_train, classes, cls=None, batch=True):
     '''
