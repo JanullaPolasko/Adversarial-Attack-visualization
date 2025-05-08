@@ -1,14 +1,14 @@
 import numpy as np
 import torch
 from sklearn.neighbors import NearestNeighbors
-from scipy.optimize import minimize
 import numpy as np
 import torch
 from torch import nn
-from adversarial_utils import load_adversarials, load_model_eval
+from adversarial_utils import load_adversarials
 from datasets import load_data
 from networks import get_dataset_mapping
 from scipy.optimize import nnls
+from sklearn.decomposition import PCA
 
 def get_layers(model, pretrained = None):
     """
@@ -51,6 +51,46 @@ def get_layers(model, pretrained = None):
     fl = not has_conv  # Flatten if there are Conv layers
 
     return layers, fl, layer_names, leaf_modules
+
+
+def pca_reduction(data_activs, x_activs, sample_size=1000, variance = 0.95):
+    """
+    Perform PCA dimensionality reduction on the activation data, retaining components that explain the % of the variance.
+
+    Args:
+    data_activs (np array) The activation data for the original dataset. It should be a 2D array with shape (n_samples, n_features).     
+    x_activs (np.ndarray) The activation data for the adversarial examples. It should also be a 2D array with shape (n_samples, n_features).    
+    sample_size (int, default=1000 ): The size of the mini-batch (sample) from `data_activs` to estimate the variance. This sample is used to estimate the number of PCA components to retain, based on the cumulative explained variance.  A larger sample size may result in more accurate estimates but requires more computation.
+    variance (int, default = 0.95): How many variance should preserve after the PCA reduction
+    Returns:
+    data_activs (np.ndarray): The transformed activation data for the original dataset after PCA reduction, with reduced dimensions.    
+    x_activs (np.ndarray): The transformed activation data for the adversarial examples after PCA reduction, with reduced dimensions.
+    """
+        
+    # Reshape the data
+    n_train = data_activs.shape[0]
+    n_adv   = x_activs.shape[0]
+    data_activs = data_activs.reshape(n_train, -1)
+    x_activs    = x_activs.reshape(n_adv, -1)
+
+    # Step 1: Take a small sample of the data (mini-batch) to estimate variance
+    sample_indices = np.random.choice(n_train, sample_size, replace=False)
+    data_sample = data_activs[sample_indices]
+    
+    # Step 2: Fit PCA on the small sample to estimate the number of components
+    pca_temp = PCA(svd_solver='randomized')
+    pca_temp.fit(data_sample)
+    
+    # Step 3: Calculate the cumulative variance and find the number of components to retain 95% variance
+    cumulative_variance = np.cumsum(pca_temp.explained_variance_ratio_)
+    n_components_95 = np.argmax(cumulative_variance >= variance) + 1  # Get the number of components
+    
+    # Step 4: Fit the final PCA model on the whole dataset with the estimated number of components
+    pca = PCA(n_components=n_components_95, svd_solver="randomized")
+    data_activs = pca.fit_transform(data_activs)
+    x_activs = pca.transform(x_activs)
+
+    return data_activs, x_activs
 
 def activations(model, data, leaf_modules, layers =0,  flat=True, Resnet = False, batch=64):
     """
@@ -302,5 +342,5 @@ def targets_matrix(attacks, dataset, model_type, how_many = 3, eps = 0.12):
              maximum_miss[original_labels[label], y_test_adv[label]] = 1
     
     maximum_miss = sorted(maximum_miss.items(), key=lambda item: item[1], reverse=True )
-    return [item[0] for item in maximum_miss[:how_many]]
+    return [item[0] for item in maximum_miss[:how_many]], maximum_miss
 
