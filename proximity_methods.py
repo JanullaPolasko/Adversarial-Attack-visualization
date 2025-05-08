@@ -292,8 +292,8 @@ def compute_method_projection(dataset, model_type, attacks, orig_class, pred_cla
 
     projection_method = {'orig_avg': orig_avg, 'pred_avg': pred_avg, 'orig_std': orig_std, 'pred_std': pred_std, 'layer_projections': layer_projections}
     if save:
-        subprocess.run(['mkdir', '-p', f"{my_path()}/distances/projected_95"])
-        filename = my_path() + f'/distances/projected_95/net_{model_type}_{dataset}_attack_{attacks}_orig_{orig_class}_pred_{pred_class}_distance.pkl'
+        subprocess.run(['mkdir', '-p', f"{my_path()}/distances/projected"])
+        filename = my_path() + f'/distances/projected/net_{model_type}_{dataset}_attack_{attacks}_orig_{orig_class}_pred_{pred_class}_distance.pkl'
         with open(filename, 'wb') as f:
             pickle.dump([orig_avg, pred_avg, orig_std,pred_std], f)
         print('file saved to:',filename)
