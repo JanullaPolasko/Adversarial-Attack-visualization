@@ -3,17 +3,16 @@ import torch
 from adversarial_utils import load_model_eval, load_data_for_art, load_adversarials
 from tqdm import tqdm
 from adversarial_utils import load_model_eval, load_data_for_art, load_adversarials
-from proximity_utils import activations, get_neigh, get_coefs, project_points, get_layers
+from proximity_utils import activations, get_neigh, get_coefs, project_points, get_layers, pca_reduction
 from tqdm import tqdm
 import gc
 from datapath import my_path
 import pickle
 import subprocess
 from networks import get_dataset_mapping
-from sklearn.decomposition import PCA
 
 
-def compute_method_ratio(dataset, model_type, attacks, orig_class, pred_class, k=100, run = 0, save = True):
+def compute_method_ratio(dataset, model_type, attacks, orig_class, pred_class, k=100, run = 0, save = True, use_all = False):
     """
     Analyze how adversarial examples behave across the network layers using K-Nearest Neighbors (KNN) counting.
 
@@ -26,6 +25,7 @@ def compute_method_ratio(dataset, model_type, attacks, orig_class, pred_class, k
     - k (int): Number of nearest neighbors to consider in KNN (default: 100).
     - run (int): Run ID for selecting a trained model (default: 0).
     - save (bool): Whether to save the results to file (default: True).
+    - use_al (bool): If True computes the neighbor counts for all classes in addition to the original and predicted classes. (default = False)
 
     Returns:
     - dict: Dictionary containing average and standard deviation of neighbor counts for original and predicted classes 
@@ -38,7 +38,7 @@ def compute_method_ratio(dataset, model_type, attacks, orig_class, pred_class, k
     # MODEL INFO
     _,  model = load_model_eval(dataset, model_type, run, device= device)
 
-    #ART LOADING FOR
+    #ART LOADING FOR DATA
     (x_train, y_train), (_, _), _, _ = load_data_for_art(dataset, batch_size_train=6000, batch_size_test=1000)
     
     eps = 0.12 if dataset in ['MNIST', 'FMNIST'] else 0.04 #decide epsilon in Linf
@@ -47,16 +47,17 @@ def compute_method_ratio(dataset, model_type, attacks, orig_class, pred_class, k
 
     #WE NEED TO TREAT RESNET DIFFERENTLY (skip connection and capacity)
     if model_type == 'RESNET' :
-        sample_size = 4000
+        sample_size = 16000
         if len(x_train) > sample_size:
             indices = np.random.choice(len(x_train), sample_size, replace=False)
             x_train = x_train[indices]
             y_train = y_train[indices]
 
-    #DATA FROM 2 CLASSES
-    train_mask = (y_train == orig_class) | (y_train == pred_class) 
-    x_train = x_train[train_mask]
-    y_train = y_train[train_mask]
+    if use_all == False:
+        #DATA FROM 2 CLASSES - careful it will delete all other classes
+        train_mask = (y_train == orig_class) | (y_train == pred_class) 
+        x_train = x_train[train_mask]
+        y_train = y_train[train_mask]
 
     # those adversarials, which start from orig_class and are predicted as pred_class
     adv_mask = (original_labels == orig_class)
@@ -84,6 +85,7 @@ def compute_method_ratio(dataset, model_type, attacks, orig_class, pred_class, k
 
     orig_count = np.zeros((len(layers), adv_x.shape[0]))
     pred_count = np.zeros((len(layers), adv_x.shape[0]))
+    other_count = np.zeros((len(layers), adv_x.shape[0])) if use_all else None
 
     for lay in tqdm(range(len(layers))):
         torch.cuda.empty_cache()
@@ -97,6 +99,8 @@ def compute_method_ratio(dataset, model_type, attacks, orig_class, pred_class, k
 
         orig_count[lay, :] = np.sum(found_labels == orig_class, axis=1)
         pred_count[lay, :] = np.sum(found_labels == pred_class, axis=1)
+        if use_all:
+            other_count[lay, :] = k - orig_count[lay, :] - pred_count[lay, :]
         
         del  train_activs, adv_activs, nb, found_labels
         gc.collect()
@@ -108,8 +112,22 @@ def compute_method_ratio(dataset, model_type, attacks, orig_class, pred_class, k
     orig_std =  np.std(orig_count, axis=1)
     pred_std = np.std(pred_count, axis=1)
 
-    # Save the results into a dictionary (ratio_method)
-    ratio_method = {'orig_avg': orig_avg, 'pred_avg': pred_avg, 'orig_std': orig_std, 'pred_std': pred_std}
+    if use_all:
+        other_avg = other_count.mean(axis=1)
+        other_std = other_count.std(axis=1)
+        ratio_method = {
+            'orig_avg': orig_avg,
+            'pred_avg': pred_avg,
+            'other_avg': other_avg,
+            'orig_std': orig_std,
+            'pred_std': pred_std,
+            'other_std': other_std}
+    else:
+        ratio_method = {
+            'orig_avg': orig_avg,
+            'pred_avg': pred_avg,
+            'orig_std': orig_std,
+            'pred_std': pred_std}
 
     if save:
         subprocess.run(['mkdir', '-p', f"{my_path()}/distances/ratio"])
@@ -121,7 +139,8 @@ def compute_method_ratio(dataset, model_type, attacks, orig_class, pred_class, k
     return ratio_method
 
 
-def compute_method_projection(dataset, model_type, attacks, orig_class, pred_class, k=50, run =0, save = True, pca_reduced =400):
+
+def compute_method_projection(dataset, model_type, attacks, orig_class, pred_class, k=50, run =0, save = True, variance_threshold=0.95):
     """
      Analyze adversarial example behavior by projecting them onto class-specific manifolds
     using convex hull approximation, with optional PCA-based dimensionality reduction.
@@ -135,8 +154,7 @@ def compute_method_projection(dataset, model_type, attacks, orig_class, pred_cla
     - k (int): Number of nearest neighbors to use when constructing convex manifolds (default: 50).
     - run (int): Index of the training run to load the model (default: 0).
     - save (bool): Whether to save the results and projections to disk (default: True).
-    - pca_reduced (int): Maximum number of principal components to keep when reducing
-      activation dimensionality before projection (default: 400).
+    - variance_threshold (int): controls the amount of variance to retain in PCA dimension reduction method (defauld: 0.95)
 
     Returns:
     - dict: Contains average and standard deviation of distances to original and predicted class manifolds per layer, 
@@ -147,12 +165,21 @@ def compute_method_projection(dataset, model_type, attacks, orig_class, pred_cla
     # MODEL INFO
     _,  model = load_model_eval(dataset, model_type, run, device= device)
     
-    #ART LOADING FOR
+    #ART LOADING FOR DATA
     (x_train, y_train), (x_test, y_test), input_shape, classes = load_data_for_art(dataset, batch_size_train=60000, batch_size_test=10000)
     eps = 0.12 if dataset in ['MNIST', 'FMNIST'] else 0.04 #decide epsilon in Linf
     original, original_labels, x_test_adv, y_test_adv = load_adversarials(attacks, dataset, model_type, eps= eps)
 
-    # Convert data to torch tensors on GPU
+
+    #WE NEED TO TREAT RESNET DIFFERENTLY (skip connection and capacity)
+    if model_type == 'RESNET' :
+        sample_size = 16000
+        if len(x_train) > sample_size:
+            indices = np.random.choice(len(x_train), sample_size, replace=False)
+            x_train = x_train[indices]
+            y_train = y_train[indices]
+
+    # Convert data to torch tensors on GPU - free cpu
     x_train = torch.from_numpy(x_train).float().to(device)
     y_train = torch.from_numpy(y_train).to(device)
     x_test_adv = torch.from_numpy(x_test_adv).float().to(device)
@@ -161,8 +188,8 @@ def compute_method_projection(dataset, model_type, attacks, orig_class, pred_cla
     torch.cuda.empty_cache()
 
 
-    mask = (y_train == orig_class) | (y_train == pred_class)
-    x_train, y_train = x_train[mask], y_train[mask]
+    # mask = (y_train == orig_class) | (y_train == pred_class)
+    # x_train, y_train = x_train[mask], y_train[mask]
 
     #DATA FROM 2 CLASSES
     orig_mask = y_train == orig_class  
@@ -170,7 +197,7 @@ def compute_method_projection(dataset, model_type, attacks, orig_class, pred_cla
     pred_mask = y_train == pred_class  
     x_pred_cls = x_train[pred_mask]
 
-    # #MASK COMPUTATION
+    #MASK COMPUTATION
     or_mask = (original_labels == orig_class)  
     x_adv = x_test_adv[or_mask]
     y_adv = y_test_adv[or_mask]
@@ -206,26 +233,16 @@ def compute_method_projection(dataset, model_type, attacks, orig_class, pred_cla
 
     for lay in tqdm(range(n_layers)): 
         torch.cuda.empty_cache()
-
-        data_activs = activations(model, x_train,leaf_modules= leaf_modules, layers= layers[lay], Resnet= model_type == "RESNET", flat= fl)
-        x_activs = activations(model, x_adv, leaf_modules= leaf_modules, layers= layers[lay], Resnet= model_type == "RESNET", flat =fl)
-        # GET COEFICIENT ALPHA AND KNN -optimization problem
         
-        #USING PCA FOR DIMENSIONALITY REDUCTION
-        # flatten into (n_samples, D)
-        n_train = data_activs.shape[0]
-        n_adv   = x_activs.shape[0]
-        data_activs = data_activs.reshape(n_train, -1)
-        x_activs    = x_activs.reshape(n_adv,   -1)
-        actual_dim = min(pca_reduced, n_train, data_activs.shape[1])
+        data_activs = activations(model, x_train,leaf_modules= leaf_modules, layers= layers[lay],  flat= fl)
+        x_activs = activations(model, x_adv, leaf_modules= leaf_modules, layers= layers[lay], flat =fl)
 
-        pca = PCA(n_components=actual_dim, svd_solver="randomized")
-        data_low = pca.fit_transform(data_activs)   
-        adv_low  = pca.transform(x_activs) 
+        data_activs, x_activs = pca_reduction(data_activs, x_activs )
 
         # GET COEFICIENT ALPHA AND KNN -optimization problem
-        nb_is, ks = get_coefs(adv_low, k, data_low, y_train, classes)
+        nb_is, ks = get_coefs(x_activs, k, data_activs, y_train, classes)
         base = x_train_flat[nb_is] 
+
         # projection calculation (i  sample index, j is ngh index, k feature indes)
         projections = np.einsum('ijk,ij->ik', base, ks)
         layer_projections[lay] = projections
@@ -269,7 +286,7 @@ def compute_method_projection(dataset, model_type, attacks, orig_class, pred_cla
         subprocess.run(['mkdir', '-p', f"{my_path()}/distances/projected"])
         filename = my_path() + f'/distances/projected/net_{model_type}_{dataset}_attack_{attacks}_orig_{orig_class}_pred_{pred_class}_distance.pkl'
         with open(filename, 'wb') as f:
-            pickle.dump([orig_avg, pred_avg, layer_projections], f)
+            pickle.dump([orig_avg, pred_avg, orig_std,pred_std], f)
         print('file saved to:',filename)
     
     return projection_method
