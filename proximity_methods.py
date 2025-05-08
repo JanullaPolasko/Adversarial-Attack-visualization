@@ -38,7 +38,7 @@ def compute_method_ratio(dataset, model_type, attacks, orig_class, pred_class, k
     # MODEL INFO
     _,  model = load_model_eval(dataset, model_type, run, device= device)
 
-    #ART LOADING FOR DATA
+    #ART LOADING FOR
     (x_train, y_train), (_, _), _, _ = load_data_for_art(dataset, batch_size_train=6000, batch_size_test=1000)
     
     eps = 0.12 if dataset in ['MNIST', 'FMNIST'] else 0.04 #decide epsilon in Linf
@@ -140,7 +140,7 @@ def compute_method_ratio(dataset, model_type, attacks, orig_class, pred_class, k
 
 
 
-def compute_method_projection(dataset, model_type, attacks, orig_class, pred_class, k=50, run =0, save = True, variance_threshold=0.95):
+def compute_method_projection(dataset, model_type, attacks, orig_class, pred_class, k=50, run =0, save = True, variance_threshold=0.95, use_all = True):
     """
      Analyze adversarial example behavior by projecting them onto class-specific manifolds
     using convex hull approximation, with optional PCA-based dimensionality reduction.
@@ -155,6 +155,7 @@ def compute_method_projection(dataset, model_type, attacks, orig_class, pred_cla
     - run (int): Index of the training run to load the model (default: 0).
     - save (bool): Whether to save the results and projections to disk (default: True).
     - variance_threshold (int): controls the amount of variance to retain in PCA dimension reduction method (defauld: 0.95)
+    - use_al (bool, default = True): If True, the computation uses the entire dataset. If False, only the original and predicted classes are prefiltered, which significantly speeds up the process.
 
     Returns:
     - dict: Contains average and standard deviation of distances to original and predicted class manifolds per layer, 
@@ -165,15 +166,22 @@ def compute_method_projection(dataset, model_type, attacks, orig_class, pred_cla
     # MODEL INFO
     _,  model = load_model_eval(dataset, model_type, run, device= device)
     
-    #ART LOADING FOR DATA
+    #ART LOADING FOR AE
     (x_train, y_train), (x_test, y_test), input_shape, classes = load_data_for_art(dataset, batch_size_train=60000, batch_size_test=10000)
     eps = 0.12 if dataset in ['MNIST', 'FMNIST'] else 0.04 #decide epsilon in Linf
     original, original_labels, x_test_adv, y_test_adv = load_adversarials(attacks, dataset, model_type, eps= eps)
 
 
+
+    sample_size = 50000
+    if len(x_train) > sample_size:
+            indices = np.random.choice(len(x_train), sample_size, replace=False)
+            x_train = x_train[indices]
+            y_train = y_train[indices]
+
     #WE NEED TO TREAT RESNET DIFFERENTLY (skip connection and capacity)
     if model_type == 'RESNET' :
-        sample_size = 16000
+        sample_size = 12000
         if len(x_train) > sample_size:
             indices = np.random.choice(len(x_train), sample_size, replace=False)
             x_train = x_train[indices]
@@ -188,8 +196,9 @@ def compute_method_projection(dataset, model_type, attacks, orig_class, pred_cla
     torch.cuda.empty_cache()
 
 
-    # mask = (y_train == orig_class) | (y_train == pred_class)
-    # x_train, y_train = x_train[mask], y_train[mask]
+    if use_all == False:
+        mask = (y_train == orig_class) | (y_train == pred_class)
+        x_train, y_train = x_train[mask], y_train[mask]
 
     #DATA FROM 2 CLASSES
     orig_mask = y_train == orig_class  
@@ -197,7 +206,7 @@ def compute_method_projection(dataset, model_type, attacks, orig_class, pred_cla
     pred_mask = y_train == pred_class  
     x_pred_cls = x_train[pred_mask]
 
-    #MASK COMPUTATION
+    # #MASK COMPUTATION
     or_mask = (original_labels == orig_class)  
     x_adv = x_test_adv[or_mask]
     y_adv = y_test_adv[or_mask]
@@ -237,7 +246,7 @@ def compute_method_projection(dataset, model_type, attacks, orig_class, pred_cla
         data_activs = activations(model, x_train,leaf_modules= leaf_modules, layers= layers[lay],  flat= fl)
         x_activs = activations(model, x_adv, leaf_modules= leaf_modules, layers= layers[lay], flat =fl)
 
-        data_activs, x_activs = pca_reduction(data_activs, x_activs )
+        data_activs, x_activs = pca_reduction(data_activs, x_activs, variance= variance_threshold )
 
         # GET COEFICIENT ALPHA AND KNN -optimization problem
         nb_is, ks = get_coefs(x_activs, k, data_activs, y_train, classes)
@@ -283,8 +292,8 @@ def compute_method_projection(dataset, model_type, attacks, orig_class, pred_cla
 
     projection_method = {'orig_avg': orig_avg, 'pred_avg': pred_avg, 'orig_std': orig_std, 'pred_std': pred_std, 'layer_projections': layer_projections}
     if save:
-        subprocess.run(['mkdir', '-p', f"{my_path()}/distances/projected"])
-        filename = my_path() + f'/distances/projected/net_{model_type}_{dataset}_attack_{attacks}_orig_{orig_class}_pred_{pred_class}_distance.pkl'
+        subprocess.run(['mkdir', '-p', f"{my_path()}/distances/projected_95"])
+        filename = my_path() + f'/distances/projected_95/net_{model_type}_{dataset}_attack_{attacks}_orig_{orig_class}_pred_{pred_class}_distance.pkl'
         with open(filename, 'wb') as f:
             pickle.dump([orig_avg, pred_avg, orig_std,pred_std], f)
         print('file saved to:',filename)
