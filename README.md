@@ -64,11 +64,13 @@ At the end of `generate_adversarial.py`, you will find an example of how to call
 
 ### 3. Visualizing Neural Network Behavior Under Adversarial Attacks
 
-The core logic for visualizing how neural networks behave under adversarial attacks is implemented in `proximity_methods.py`, which defines two main analysis methods - `compute_method_ratio()` and `compute_method_projection()`. These methods aim to examine how internal activations evolve across each layer when adversarial inputs are passed through the network.
+The logic for visualizing how neural networks behave under adversarial attacks is implemented in `proximity_methods.py`, which defines two main analysis methods - `compute_method_ratio()` and `compute_method_projection()`. These methods examine how internal activations evolve across each layer when adversarial inputs are passed through the network.
 
 The analysis begins by loading pre-generated adversarial examples and comparing their internal activations to those of clean training samples, layer by layer. This layerwise tracking helps reveal patterns of sensitivity and feature distortion under attack. In the end the result are also saved under subfolder named `/distanes` inside the defined `datapath()`.
 
-The visualization process uses various helper functions from `proximity_utils.py`, including tools for KNN counting, activation extraction, and structured comparison. A full example of how to apply these methods can be found in the `save_methods.py`. It contains two functions, `using_projection()` and `using_ratio()`, which demonstrate how to call the analysis pipeline and visualize the results using tools from `visualization_utils.py`. These examples serve as practical guides for performing layerwise analysis and plotting model behavior under adversarial conditions.
+Since these methods require significant memory and computation, the `compute_method_projection()` function uses PCA to reduce the dimensionality. The program currectly support retaining 95% of the variance in the reduction, but this can be adjusted using the variance threshold parameter in the function. The functions also use the parameter `use all`. If set to `False`, only the original and predicted classes are considered, which optimizes memory usage and performance. If set to `True`, the entire dataset is used. Using `use_all=False` can significantly speed up the process and reduce memory consumption, but in some analyses, it might be necessary to include data from all classes.
+
+The visualization process uses various helper functions from `proximity_utils.py`, including tools for KNN counting, activation extraction, and structured comparison. A full example of how to apply these methods can be found in the `save_methods.py`. It contains two functions, `using_projection()` and `using_ratio()`, which demonstrate how to call the analysis pipeline and visualize the results using tools from `visualization_utils.py`. 
 
 <h3>Example of Using KNN Method</h3>
 <p align="center">
@@ -86,5 +88,5 @@ The visualization process uses various helper functions from `proximity_utils.py
 
 ##  Tips for Usage
 - The `generate_adversarial` script may take a long time to run. Make sure your GPU is connected and CUDA is enabled.
-- If the proximity methods crash or stop unexpectedly, it's likely due to a memory error. Try reducing the size of the training dataset used for activation extraction to avoid out-of-memory issues (for example this is done in codes for ResNet model) .
+- If the proximity methods crash or stop unexpectedly, it's likely due to a memory error. Try reducing the size of the training dataset used for activation extraction to avoid out-of-memory issues (for example this is done in codes for ResNet model) .Additionally, consider setting the use_all parameter to False or lowering the variance threshold in the PCA dimensionality reduction method.
 
