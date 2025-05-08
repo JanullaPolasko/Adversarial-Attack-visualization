@@ -27,8 +27,6 @@ def get_dataset_mapping():
         ('FMNIST', 'CONV' ,MNIST_conv, 10, False),
         ('CIFAR10', 'RESNET' ,CIFAR10_ResNet, 10, True),
         ('MNIST', 'RESNET' ,MNIST_ResNet, 10, True),
-        ('MNIST', 'VIT' ,MNIST_ViT, 10, True),
-        ('CIFAR10', 'VIT' ,CIFAR10_ViT, 10, True ),
     )
     return dataset_mapping
 
