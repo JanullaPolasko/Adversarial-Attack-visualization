@@ -171,17 +171,10 @@ def compute_method_projection(dataset, model_type, attacks, orig_class, pred_cla
     eps = 0.12 if dataset in ['MNIST', 'FMNIST'] else 0.04 #decide epsilon in Linf
     original, original_labels, x_test_adv, y_test_adv = load_adversarials(attacks, dataset, model_type, eps= eps)
 
-
-
-    sample_size = 50000
-    if len(x_train) > sample_size:
-            indices = np.random.choice(len(x_train), sample_size, replace=False)
-            x_train = x_train[indices]
-            y_train = y_train[indices]
-
+    
     #WE NEED TO TREAT RESNET DIFFERENTLY (skip connection and capacity)
     if model_type == 'RESNET' :
-        sample_size = 12000
+        sample_size = 16000
         if len(x_train) > sample_size:
             indices = np.random.choice(len(x_train), sample_size, replace=False)
             x_train = x_train[indices]
