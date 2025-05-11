@@ -33,7 +33,7 @@ The analysis is based on two complementary techniques that help explain how adve
 
 The first method examines the nearest neighbors of adversarial examples within the activation space of each layer. By comparing how many of these neighbors belong to the original versus the predicted (incorrect) class, we can observe how the identity of the example shifts as it moves through the network. 
 
-The second method focuses on measuring distances from adversarial examples to class-specific manifolds, which are approximated using convex combinations of nearby training samples. By projecting the adversarial example onto these manifolds, we can determine whether it still lies close to its original class or has moved toward the predicted class. This geometric view provides a more continuous and structure-aware way of tracking how adversarial inputs diverge from expected behavior.
+The second method focuses on measuring distances from adversarial examples to class-specific manifolds, which are approximated using convex combinations of nearby training samples. By projecting the adversarial example onto these manifolds, we can determine whether it still lies close to its original class or has moved toward the predicted class. 
 
 ##  Usage
 
