@@ -171,10 +171,17 @@ def compute_method_projection(dataset, model_type, attacks, orig_class, pred_cla
     eps = 0.12 if dataset in ['MNIST', 'FMNIST'] else 0.04 #decide epsilon in Linf
     original, original_labels, x_test_adv, y_test_adv = load_adversarials(attacks, dataset, model_type, eps= eps)
 
-    
+
+
+    sample_size = 50000
+    if len(x_train) > sample_size:
+            indices = np.random.choice(len(x_train), sample_size, replace=False)
+            x_train = x_train[indices]
+            y_train = y_train[indices]
+
     #WE NEED TO TREAT RESNET DIFFERENTLY (skip connection and capacity)
     if model_type == 'RESNET' :
-        sample_size = 16000
+        sample_size = 12000
         if len(x_train) > sample_size:
             indices = np.random.choice(len(x_train), sample_size, replace=False)
             x_train = x_train[indices]
@@ -227,7 +234,6 @@ def compute_method_projection(dataset, model_type, attacks, orig_class, pred_cla
     n_layers = len(layers)
     dist_to_orig = np.zeros((n_layers, n_samples))
     dist_to_pred = np.zeros((n_layers, n_samples))
-    counts = np.zeros((n_layers, 3))
     
 
     # RESHAPE TO 1D (N, H*W)  (layer, sample, flattened_input_size)
@@ -259,21 +265,12 @@ def compute_method_projection(dataset, model_type, attacks, orig_class, pred_cla
         if np.any(outlier_mask):
             print(f"Outlier sums found: {sum_ks[outlier_mask]}")
 
-         #GET PREDICTION FOR PROJECTION
-        with torch.no_grad():
-            otpt_proj = model(projection_x).detach().cpu().numpy()
-        preds = np.argmax(otpt_proj, axis=1)
-
-        #RESULT WHERE INPUT GOES (ORIG, PRED, ELSE)
-        counts[lay, 0] = np.sum(preds == orig_class)
-        counts[lay, 1] = np.sum(preds == pred_class)
-        counts[lay, 2] = len(preds) - counts[lay, 0] - counts[lay, 1]
 
         # COMPUTE DISTANCE TO MANIFOLDS
         _, dist_to_orig[lay] = project_points(projections, k, x_orig_cls.cpu().numpy(), y_train.cpu().numpy(), classes)
         _, dist_to_pred[lay] = project_points(projections, k, x_pred_cls.cpu().numpy(), y_train.cpu().numpy(), classes)
 
-        del data_activs, x_activs, nb_is, ks, base, projections, projection_x, otpt_proj
+        del data_activs, x_activs, nb_is, ks, base, projections, projection_x
         torch.cuda.empty_cache()
         gc.collect()
     
