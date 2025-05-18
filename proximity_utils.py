@@ -95,58 +95,6 @@ def pca_reduction(data_activs, x_activs, sample_size=1000, variance = 0.95):
     return data_activs, x_activs
 
 
-# def activations(model, data, leaf_modules, layers, flat=True, batch_size=64, fp16=False):
-#     """
-#     Memory-efficient activation extraction that returns the array directly.
-#     Processes data in batches and aggressively cleans up intermediate tensors.
-#     """
-#     device = next(model.parameters()).device
-#     dtype = torch.float16 if fp16 else torch.float32
-#     activation_list = []
-
-#     # Convert data to tensor if needed
-#     if isinstance(data, np.ndarray):
-#         data = torch.from_numpy(data).to(device=device, dtype=dtype)
-#     else:
-#         data = data.to(device=device, dtype=dtype)
-
-#     # Handle input layer special case
-#     if layers == 0:
-#         if flat:
-#             return data.flatten(start_dim=1).cpu().numpy()
-#         return data.cpu().numpy()
-
-#     # Create the minimal computation graph needed
-#     model_segment = torch.nn.Sequential(*leaf_modules[1:layers+1])
-#     model_segment = model_segment.to(device).eval()
-
-#     with torch.no_grad(), torch.cuda.amp.autocast(enabled=fp16):
-#         for batch_start in range(0, len(data), batch_size):
-#             batch_data = data[batch_start:batch_start + batch_size]
-            
-#             # Process batch
-#             activations = model_segment(batch_data)
-            
-#             # Convert and store results
-#             if flat:
-#                 activations = activations.flatten(start_dim=1)
-                
-#             # Move to CPU immediately and convert to numpy
-#             activation_list.append(activations.cpu().numpy())
-            
-#             # Aggressive cleanup
-#             del batch_data, activations
-#             torch.cuda.empty_cache()
-#             gc.collect()
-
-#     # Combine all batches while keeping memory usage controlled
-#     final_array = np.concatenate(activation_list, axis=0)
-#     del activation_list
-#     gc.collect()
-    
-#     return final_array
-
-
 
 def activations(model, data, leaf_modules, layers =0,  flat=True, Resnet = False, batch=64):
     """
