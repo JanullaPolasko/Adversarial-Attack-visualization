@@ -9,6 +9,8 @@ from datasets import load_data
 from networks import get_dataset_mapping
 from scipy.optimize import nnls
 from sklearn.decomposition import PCA
+from scipy.optimize import minimize
+import cvxpy as cp
 
 def get_layers(model, pretrained = None):
     """
@@ -84,13 +86,67 @@ def pca_reduction(data_activs, x_activs, sample_size=1000, variance = 0.95):
     # Step 3: Calculate the cumulative variance and find the number of components to retain 95% variance
     cumulative_variance = np.cumsum(pca_temp.explained_variance_ratio_)
     n_components_95 = np.argmax(cumulative_variance >= variance) + 1  # Get the number of components
-    
+ 
     # Step 4: Fit the final PCA model on the whole dataset with the estimated number of components
     pca = PCA(n_components=n_components_95, svd_solver="randomized")
     data_activs = pca.fit_transform(data_activs)
     x_activs = pca.transform(x_activs)
-
+    
     return data_activs, x_activs
+
+
+# def activations(model, data, leaf_modules, layers, flat=True, batch_size=64, fp16=False):
+#     """
+#     Memory-efficient activation extraction that returns the array directly.
+#     Processes data in batches and aggressively cleans up intermediate tensors.
+#     """
+#     device = next(model.parameters()).device
+#     dtype = torch.float16 if fp16 else torch.float32
+#     activation_list = []
+
+#     # Convert data to tensor if needed
+#     if isinstance(data, np.ndarray):
+#         data = torch.from_numpy(data).to(device=device, dtype=dtype)
+#     else:
+#         data = data.to(device=device, dtype=dtype)
+
+#     # Handle input layer special case
+#     if layers == 0:
+#         if flat:
+#             return data.flatten(start_dim=1).cpu().numpy()
+#         return data.cpu().numpy()
+
+#     # Create the minimal computation graph needed
+#     model_segment = torch.nn.Sequential(*leaf_modules[1:layers+1])
+#     model_segment = model_segment.to(device).eval()
+
+#     with torch.no_grad(), torch.cuda.amp.autocast(enabled=fp16):
+#         for batch_start in range(0, len(data), batch_size):
+#             batch_data = data[batch_start:batch_start + batch_size]
+            
+#             # Process batch
+#             activations = model_segment(batch_data)
+            
+#             # Convert and store results
+#             if flat:
+#                 activations = activations.flatten(start_dim=1)
+                
+#             # Move to CPU immediately and convert to numpy
+#             activation_list.append(activations.cpu().numpy())
+            
+#             # Aggressive cleanup
+#             del batch_data, activations
+#             torch.cuda.empty_cache()
+#             gc.collect()
+
+#     # Combine all batches while keeping memory usage controlled
+#     final_array = np.concatenate(activation_list, axis=0)
+#     del activation_list
+#     gc.collect()
+    
+#     return final_array
+
+
 
 def activations(model, data, leaf_modules, layers =0,  flat=True, Resnet = False, batch=64):
     """
@@ -193,7 +249,6 @@ def activations(model, data, leaf_modules, layers =0,  flat=True, Resnet = False
         hook_handle.remove()
         return np.concatenate(activations_list, axis=0)
 
-
 def get_neigh(points, k, x_train):
     """
     Finds the indices of the k-nearest neighbors for a set of points in the training data.
@@ -211,30 +266,50 @@ def get_neigh(points, k, x_train):
     _, nb_ind = nbrs.kneighbors(points)
     return nb_ind
 
-
-def convex_projection(X, y):
+def convex_projection(X, y, max_slsqp_tries=100):
     """
-    Fast convex projection of y onto the convex hull of columns of X using non-negative least squares.
-
-    Args:
-      - X: numpy array of shape (D, k) where each column is a neighbor point in D dimensions.
-      - y: numpy array of shape (D,)
-
+    Exact convex projection of y onto the convex hull of columns of X
+    using constrained QP (SLSQP), with fallback to NNLS if it fails.
+    
     Returns:
-      - projected_point: numpy array of shape (D,)
-      - weights: numpy array of shape (k,)
+      - p: projected point (D,)
+      - w: weights (k,)
     """
-    # Solve non-negative least squares: min ||X w - y||_2 subject to w >= 0
+    D, k = X.shape
+    # objective: mean-squared error
+    fun = lambda w: np.sum((X.dot(w) - y)**2) / D
+
+    # constraints: sum w_i = 1, w_i >= 0
+    cons = (
+        {'type': 'eq',   'fun': lambda w: np.sum(w) - 1},
+        {'type': 'ineq','fun': lambda w: w})
+    x0 = np.full(k, 1.0/k)
+
+    for attempt in range(1, max_slsqp_tries+1):
+        res = minimize(fun, x0, method='SLSQP', constraints=cons,
+                       options={'ftol':1e-9, 'maxiter':100, 'disp':False})
+        if res.success:
+            w = res.x
+            p = X.dot(w)
+            return p, w
+        else:
+            # update x0 
+            x0 = res.x if res.x is not None else x0
+            #print(f"SLSQP attempt {attempt} failed: {res.message}")
+
+    # Fallback to NNLS-based projection
+    print("Falling back to NNLS projection")
+    #  min ||X w - y||_2 subject to w >= 0
     w, _ = nnls(X, y)
     # Normalize to make it a convex combination
     total = w.sum()
     if total > 0:
         w = w / total
-    # Compute projection
+
     p = X.dot(w)
     return p, w
- 
-            
+
+             
 def project_points(points, k, x_train, y_train, classes, cls=None, batch=True):
     '''
     points: body ktorych projekcie chceme najst. Ma mat tvar (N, *)
@@ -316,7 +391,6 @@ def get_coefs(points, k, x_train, y_train, classes, cls=None):
         _, coefs[i] = convex_projection(X, points_flat[i])
 
     return nb_ind, coefs
-
 
 def targets_matrix(attacks, dataset, model_type, how_many = 3, eps = 0.12):
     """
