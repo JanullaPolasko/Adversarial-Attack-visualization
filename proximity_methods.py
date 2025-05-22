@@ -242,8 +242,9 @@ def compute_method_projection(dataset, model_type, attacks, orig_class, pred_cla
     for lay in tqdm(range(n_layers)): 
         torch.cuda.empty_cache()
         
-        data_activs = activations(model, x_train,leaf_modules= leaf_modules, layers= layers[lay],  flat= fl)
-        x_activs = activations(model, x_adv, leaf_modules= leaf_modules, layers= layers[lay], flat =fl)
+        data_activs = activations(model, x_train,leaf_modules= leaf_modules, layers= layers[lay],  flat= fl, Resnet= model_type == "RESNET")
+        x_activs = activations(model, x_adv, leaf_modules= leaf_modules, layers= layers[lay], flat =fl,Resnet= model_type == "RESNET")
+
 
         data_activs, x_activs = pca_reduction(data_activs, x_activs, variance= variance_threshold )
 
